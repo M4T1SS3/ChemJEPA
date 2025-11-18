@@ -146,23 +146,6 @@ Already installed on your Mac:
 
 ---
 
-## Project Structure
-
-```
-ChemWorld/
-├── test_quick.py              # Quick test (30 sec)
-├── train_production.py        # Production training (2-4 hrs)
-├── chemjepa/                  # Core library
-│   ├── models/                # Neural network modules
-│   ├── training/              # Training infrastructure
-│   ├── data/                  # Data loading
-│   └── utils/                 # Utilities
-├── data/                      # Datasets
-└── checkpoints/               # Saved models
-```
-
----
-
 ## Status
 
 - ✅ **v0.1 Complete** - All components implemented and tested

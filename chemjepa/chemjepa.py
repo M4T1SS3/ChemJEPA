@@ -71,9 +71,13 @@ class ChemJEPA(nn.Module):
 
         # Encoders
         mol_config = mol_encoder_config or {}
+        # RDKit generates 32-dim atom features by default
         self.molecular_encoder = MolecularEncoder(
+            atom_feature_dim=32,  # Match RDKit output
+            edge_feature_dim=12,  # Match RDKit edge features
             local_dim=mol_dim // 2,
             global_dim=mol_dim // 2,
+            use_3d=False,  # Disable 3D for now (has bugs)
             **mol_config
         ).to(self.device)
 

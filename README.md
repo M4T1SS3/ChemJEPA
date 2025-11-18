@@ -140,17 +140,6 @@ This work explores several ideas:
 
 
 
-## Limitations
-
-- Currently trained only on drug-like molecules (ZINC250k); generalization to other chemical domains unverified
-- 3D coordinate generation occasionally fails for complex ring systems (falls back to 2D graph)
-- Planning in latent space requires decoder for final molecule generation (not yet implemented)
-- Protein binding predictions rely on frozen ESM-2; fine-tuning may improve specificity
-- Multi-step retrosynthesis not yet supported
-
----
-
-
 ---
 
 ## Citation
@@ -180,14 +169,3 @@ This work explores several ideas:
 
 MIT License
 
----
-
-## Status
-
-- ✅ v0.1: Core implementation complete
-- ✅ Verified on MacBook Pro M4 with MPS acceleration
-- 🔄 Currently training on ZINC250k (Phase 1)
-- ⏳ Phase 2-3 training pending
-- ⏳ Benchmarking on GuacaMol/MoleculeNet pending
-
-**Current version**: 0.1.0 (Research prototype)

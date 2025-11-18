@@ -83,10 +83,10 @@ def main():
         "context_dim": 256,
 
         # Training settings
-        "batch_size": 32,           # Adjust based on your RAM
-        "num_epochs": 100,          # Full training
-        "learning_rate": 1e-4,
-        "weight_decay": 1e-5,
+        "batch_size": 16,           # Reduced for stability (was 32)
+        "num_epochs": 1,            # Just 1 epoch for testing (~3 hours)
+        "learning_rate": 5e-6,      # Very conservative (was 1e-5)
+        "weight_decay": 0.0,        # No weight decay for now
         "num_workers": 0,           # 0 for MPS, 4+ for CUDA
 
         # Paths

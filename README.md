@@ -121,29 +121,6 @@ Candidate Molecules
 
 ---
 
-## Training Pipeline
-
-ChemJEPA uses curriculum learning across three phases:
-
-**Phase 1: JEPA Pretraining** (Current)
-```bash
-python3 train_production.py
-```
-- Self-supervised latent prediction on ZINC250k
-- Learn molecular representations and energy landscape
-- ~100 epochs
-
-**Phase 2: Property Prediction**
-- Fine-tune on property-annotated data
-- Calibrate uncertainty estimates
-- ~50 epochs
-
-**Phase 3: Planning & Optimization**
-- End-to-end planning refinement
-- Multi-objective optimization
-- ~30 epochs
-
----
 
 ## Design Principles
 
@@ -161,23 +138,7 @@ This work explores several ideas:
 
 ---
 
-## Results
 
-*Benchmarking in progress on ZINC250k dataset. Preliminary results on dummy data confirm architecture is functional.*
-
-### Performance Metrics (Target)
-- Latent planning: ~100x faster than SMILES-based generation
-- Molecular validity: >95% on ZINC250k test set
-- Property prediction: Comparable to graph neural network baselines
-- Novelty detection: AUROC >0.85 for out-of-distribution molecules
-
-### Computational Efficiency
-- Encoding: ~0.05 sec/molecule
-- Energy evaluation: ~0.001 sec
-- 100-step planning: ~1 sec
-- Training: 2-4 hours on M4 Pro (MPS), ~1 hour on A100
-
----
 
 ## Limitations
 
@@ -189,19 +150,6 @@ This work explores several ideas:
 
 ---
 
-## Repository Structure
-
-```
-chemjepa/
-├── chemjepa/              # Core library
-│   ├── models/            # Neural network modules
-│   ├── training/          # Training infrastructure
-│   ├── data/              # Data loaders
-│   └── utils/             # Chemistry utilities
-├── scripts/               # Data preparation
-├── test_quick.py          # Installation verification
-└── train_production.py    # Training pipeline
-```
 
 ---
 

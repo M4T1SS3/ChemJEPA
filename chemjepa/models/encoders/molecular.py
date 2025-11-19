@@ -12,10 +12,81 @@ import torch.nn as nn
 from torch_geometric.nn import MessagePassing, global_add_pool, global_mean_pool
 from torch_geometric.nn.pool import global_add_pool as gap
 from torch_geometric.nn.pool import global_max_pool as gmp
-from torch_scatter import scatter
 from e3nn import o3
 from e3nn.nn import Gate
 from typing import Optional, Tuple
+
+
+def scatter_mps_compatible(src, index, dim=0, dim_size=None, reduce='sum'):
+    """
+    MPS-compatible scatter operation using native PyTorch.
+
+    Replaces torch_scatter.scatter() which doesn't support Apple Silicon MPS.
+    Uses PyTorch's native operations that work on CPU, CUDA, and MPS.
+
+    Args:
+        src: Source tensor to scatter [N, ...]
+        index: Index tensor [N] indicating where to scatter each element
+        dim: Dimension along which to scatter (default: 0)
+        dim_size: Size of output dimension (default: max(index) + 1)
+        reduce: Reduction operation ('sum', 'mean', or 'max')
+
+    Returns:
+        Scattered tensor [dim_size, ...]
+    """
+    if dim_size is None:
+        dim_size = int(index.max()) + 1
+
+    # Prepare output shape
+    shape = list(src.shape)
+    shape[dim] = dim_size
+
+    if reduce == 'sum':
+        # Simple scatter-add operation
+        out = torch.zeros(shape, dtype=src.dtype, device=src.device)
+        # Expand index to match src dimensions
+        index_expanded = index
+        for _ in range(len(src.shape) - 1):
+            index_expanded = index_expanded.unsqueeze(-1)
+        index_expanded = index_expanded.expand_as(src)
+        return out.scatter_add_(dim, index_expanded, src)
+
+    elif reduce == 'mean':
+        # Scatter-add then divide by count
+        out = torch.zeros(shape, dtype=src.dtype, device=src.device)
+        count = torch.zeros(dim_size, dtype=torch.long, device=src.device)
+
+        # Scatter values
+        index_expanded = index
+        for _ in range(len(src.shape) - 1):
+            index_expanded = index_expanded.unsqueeze(-1)
+        index_expanded = index_expanded.expand_as(src)
+        out.scatter_add_(dim, index_expanded, src)
+
+        # Count occurrences
+        count.scatter_add_(0, index, torch.ones_like(index, dtype=torch.long))
+
+        # Divide by count (with broadcasting)
+        count_expanded = count
+        for _ in range(len(src.shape) - 1):
+            count_expanded = count_expanded.unsqueeze(-1)
+
+        return out / count_expanded.clamp(min=1)
+
+    elif reduce == 'max':
+        # Use native scatter_reduce for max (PyTorch 2.0+)
+        # Initialize with very negative values for max operation
+        out = torch.full(shape, float('-inf'), dtype=src.dtype, device=src.device)
+
+        index_expanded = index
+        for _ in range(len(src.shape) - 1):
+            index_expanded = index_expanded.unsqueeze(-1)
+        index_expanded = index_expanded.expand_as(src)
+
+        return out.scatter_reduce_(dim, index_expanded, src, reduce='amax', include_self=False)
+
+    else:
+        raise ValueError(f"Unsupported reduce operation: {reduce}. Use 'sum', 'mean', or 'max'.")
 
 
 class E3EquivariantConv(MessagePassing):
@@ -92,7 +163,7 @@ class E3EquivariantConv(MessagePassing):
         pos_update = self.pos_net(out).unsqueeze(-1) * pos_dir
         # Clamp position updates to prevent explosion
         pos_update = torch.clamp(pos_update, min=-10.0, max=10.0)
-        pos_new = pos + scatter(pos_update, col, dim=0, dim_size=pos.size(0), reduce='mean')
+        pos_new = pos + scatter_mps_compatible(pos_update, col, dim=0, dim_size=pos.size(0), reduce='mean')
 
         return x_new, pos_new
 
@@ -160,15 +231,15 @@ class AttentionPooling(nn.Module):
         attn = torch.clamp(attn, min=-20.0, max=20.0)
 
         # Softmax per graph (using log-sum-exp trick for stability)
-        attn_max = scatter(attn, batch, dim=0, dim_size=B, reduce='max')[batch]  # [N, H]
+        attn_max = scatter_mps_compatible(attn, batch, dim=0, dim_size=B, reduce='max')[batch]  # [N, H]
         attn_shifted = attn - attn_max
         attn_exp = torch.exp(attn_shifted)
-        attn_sum = scatter(attn_exp, batch, dim=0, dim_size=B, reduce='sum')[batch]  # [N, H]
+        attn_sum = scatter_mps_compatible(attn_exp, batch, dim=0, dim_size=B, reduce='sum')[batch]  # [N, H]
         attn_norm = attn_exp / (attn_sum + 1e-8)
 
         # Weighted sum
         weighted = attn_norm.unsqueeze(-1) * v  # [N, H, D]
-        pooled = scatter(weighted, batch, dim=0, dim_size=B, reduce='sum')  # [B, H, D]
+        pooled = scatter_mps_compatible(weighted, batch, dim=0, dim_size=B, reduce='sum')  # [B, H, D]
 
         return pooled.view(B, -1)
 
@@ -219,14 +290,14 @@ class Set2Set(nn.Module):
             attn = torch.clamp(attn, min=-20.0, max=20.0)
 
             # Softmax per graph (using log-sum-exp trick for stability)
-            attn_max = scatter(attn, batch, dim=0, dim_size=B, reduce='max')[batch]
+            attn_max = scatter_mps_compatible(attn, batch, dim=0, dim_size=B, reduce='max')[batch]
             attn_shifted = attn - attn_max
             attn_exp = torch.exp(attn_shifted)
-            attn_sum = scatter(attn_exp, batch, dim=0, dim_size=B, reduce='sum')[batch]
+            attn_sum = scatter_mps_compatible(attn_exp, batch, dim=0, dim_size=B, reduce='sum')[batch]
             attn_norm = attn_exp / (attn_sum + 1e-8)
 
             # Weighted sum
-            r = scatter(attn_norm.unsqueeze(-1) * x, batch, dim=0, dim_size=B, reduce='sum')
+            r = scatter_mps_compatible(attn_norm.unsqueeze(-1) * x, batch, dim=0, dim_size=B, reduce='sum')
 
             # Update query
             q_star = torch.cat([q, r], dim=-1)

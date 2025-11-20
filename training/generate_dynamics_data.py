@@ -83,7 +83,14 @@ def extract_embeddings(model, data_loader, max_samples=10000):
             batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                     for k, v in batch.items()}
 
-            z_mol = model.encoder(batch)
+            # Use encode_molecule method
+            z_mol = model.encode_molecule(
+                x=batch['x'],
+                edge_index=batch['edge_index'],
+                batch=batch['batch'],
+                edge_attr=batch.get('edge_attr'),
+                pos=batch.get('pos'),
+            )
             embeddings.append(z_mol.cpu())
             smiles_list.extend(batch['smiles'])
 
@@ -210,7 +217,21 @@ def main():
 
     # Load molecular dataset
     print("\nLoading molecular dataset...")
-    dataset = MolecularDataset(use_3d=True)
+    train_csv = project_root / 'data' / 'zinc250k' / 'train.csv'
+    if not train_csv.exists():
+        # Try alternative path
+        train_csv = project_root / 'data' / 'qm9' / 'qm9_sample.csv'
+        if not train_csv.exists():
+            raise FileNotFoundError(
+                f"Training data not found. Please ensure data is in data/zinc250k/ or data/qm9/"
+            )
+
+    print(f"Using dataset: {train_csv}")
+    dataset = MolecularDataset(
+        data_path=str(train_csv),
+        smiles_column='smiles',
+        use_3d=True
+    )
     data_loader = DataLoader(
         dataset,
         batch_size=32,

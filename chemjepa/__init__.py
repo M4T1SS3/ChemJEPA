@@ -9,7 +9,7 @@ from .models.encoders.molecular import MolecularEncoder
 from .models.encoders.environment import EnvironmentEncoder
 from .models.encoders.protein import ProteinEncoder
 from .models.latent import HierarchicalLatentWorldState
-from .models.energy import EnergyModel
+from .models.energy import ChemJEPAEnergyModel
 from .models.dynamics import DynamicsPredictor
 from .models.novelty import NoveltyDetector
 from .models.planning import ImaginationEngine
@@ -23,7 +23,7 @@ __all__ = [
     "EnvironmentEncoder",
     "ProteinEncoder",
     "HierarchicalLatentWorldState",
-    "EnergyModel",
+    "ChemJEPAEnergyModel",
     "DynamicsPredictor",
     "NoveltyDetector",
     "ImaginationEngine",

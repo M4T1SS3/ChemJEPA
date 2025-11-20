@@ -13,7 +13,7 @@ from .models.encoders.molecular import MolecularEncoder
 from .models.encoders.environment import EnvironmentEncoder
 from .models.encoders.protein import ProteinEncoder
 from .models.latent import HierarchicalLatentWorldState, LatentState
-from .models.energy import EnergyModel
+from .models.energy import ChemJEPAEnergyModel
 from .models.dynamics import DynamicsPredictor
 from .models.novelty import NoveltyDetector
 from .models.planning import ImaginationEngine
@@ -98,16 +98,8 @@ class ChemJEPA(nn.Module):
             context_dim=context_dim,
         ).to(self.device)
 
-        # Energy model
-        self.energy_model = EnergyModel(
-            mol_dim=mol_dim,
-            rxn_dim=rxn_dim,
-            context_dim=context_dim,
-            target_dim=target_dim,
-            env_dim=env_dim,
-            property_dim=property_dim,
-            num_properties=num_properties,
-        ).to(self.device)
+        # Energy model (placeholder, loaded separately for Phase 2)
+        self.energy_model = None  # ChemJEPAEnergyModel loaded after Phase 1 training
 
         # Dynamics predictor
         self.dynamics_model = DynamicsPredictor(

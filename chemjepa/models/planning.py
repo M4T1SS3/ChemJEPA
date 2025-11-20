@@ -226,11 +226,14 @@ class ImaginationEngine(nn.Module):
             info: Dictionary with breakdown
         """
         # Compute energy (lower = better, so negate for score)
+        # Extract molecular embedding from latent state
+        z_mol = latent_state.z_mol if hasattr(latent_state, 'z_mol') else latent_state
+
         energy_output = self.energy_model(
-            latent_state, z_target, z_env, p_target, property_mask, return_components=True
+            z_mol, target_properties=p_target, return_components=True
         )
 
-        score = -energy_output["total_energy"].squeeze(-1)  # [B]
+        score = -energy_output["energy"].squeeze(-1)  # [B]
 
         # Check novelty
         novelty_output = self.novelty_detector.is_novel(latent_state)
@@ -241,7 +244,7 @@ class ImaginationEngine(nn.Module):
             score = score - self.novelty_penalty * novelty_mask
 
         info = {
-            "energy": energy_output["total_energy"].squeeze(-1),
+            "energy": energy_output["energy"].squeeze(-1),
             "is_novel": novelty_output["is_novel"],
             "density_score": novelty_output["density_score"],
             "energy_components": energy_output,

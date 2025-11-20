@@ -1,44 +1,220 @@
 'use client'
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
-import AnalyzeTab from '@/components/tabs/AnalyzeTab'
-import DiscoverTab from '@/components/tabs/DiscoverTab'
-import CompareTab from '@/components/tabs/CompareTab'
+import { useState } from 'react'
+import dynamic from 'next/dynamic'
+import Card from '@/components/ui/Card'
+import Button from '@/components/ui/Button'
+import PropertiesTable from '@/components/tables/PropertiesTable'
+import EnergyBar from '@/components/charts/EnergyBar'
+
+// Dynamically import viewers to avoid SSR issues
+const MoleculeViewer2D = dynamic(
+  () => import('@/components/viewers/MoleculeViewer2D'),
+  { ssr: false }
+)
+
+const MoleculeViewer3D = dynamic(
+  () => import('@/components/viewers/MoleculeViewer3D'),
+  { ssr: false }
+)
 
 export default function Home() {
+  const [smiles, setSmiles] = useState('')
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [result, setResult] = useState<any>(null)
+
+  const handleAnalyze = async () => {
+    if (!smiles) return
+
+    setAnalyzing(true)
+    // Mock data
+    setTimeout(() => {
+      setResult({
+        properties: {
+          smiles,
+          LogP: 2.5,
+          TPSA: 60,
+          MolWt: 180,
+          QED: 0.72,
+          SA: 2.1,
+          NumHDonors: 2,
+          NumHAcceptors: 3,
+          NumRotatableBonds: 1,
+        },
+        energy: {
+          total: -5.2,
+          binding: -2.1,
+          stability: -1.5,
+          properties: -1.2,
+          novelty: -0.4,
+        },
+      })
+      setAnalyzing(false)
+    }, 1000)
+  }
+
+  const exampleMolecules = [
+    { name: 'Ethanol', smiles: 'CCO' },
+    { name: 'Benzene', smiles: 'c1ccccc1' },
+    { name: 'Aspirin', smiles: 'CC(=O)Oc1ccccc1C(=O)O' },
+    { name: 'Caffeine', smiles: 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C' },
+  ]
+
   return (
-    <main className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-white">
-        <div className="container mx-auto px-6 py-4">
-          <h1 className="text-2xl font-semibold text-text">ChemJEPA</h1>
-          <p className="text-sm text-text-muted mt-1">
-            Hierarchical Latent World Models for Molecular Discovery
-          </p>
+    <main className="min-h-screen bg-gradient-to-br from-primary-50 via-background to-primary-50/30">
+      {/* Fixed Header with Glass Effect */}
+      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border-light">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold gradient-text">ChemJEPA</h1>
+              <p className="text-sm text-text-secondary mt-0.5">
+                Hierarchical Latent World Models for Molecular Discovery
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="ghost" size="sm">
+                Docs
+              </Button>
+              <Button variant="outline" size="sm">
+                Export Results
+              </Button>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="analyze">
-          <TabsList>
-            <TabsTrigger value="analyze">Analyze</TabsTrigger>
-            <TabsTrigger value="discover">Discover</TabsTrigger>
-            <TabsTrigger value="compare">Compare</TabsTrigger>
-          </TabsList>
+      {/* Main Content - with top padding for fixed header */}
+      <div className="pt-24 pb-16">
+        <div className="max-w-7xl mx-auto px-6">
+          {/* Hero Section - Molecule Input */}
+          <section className="mb-12 animate-fade-in">
+            <div className="text-center mb-8">
+              <h2 className="text-4xl font-bold text-text mb-3">
+                Analyze Molecular Structures
+              </h2>
+              <p className="text-lg text-text-secondary max-w-2xl mx-auto">
+                Enter a SMILES string to explore molecular properties, visualize structures,
+                and discover similar compounds
+              </p>
+            </div>
 
-          <TabsContent value="analyze">
-            <AnalyzeTab />
-          </TabsContent>
+            <Card hover={false} className="max-w-4xl mx-auto">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-3">
+                    SMILES String
+                  </label>
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      value={smiles}
+                      onChange={(e) => setSmiles(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
+                      placeholder="e.g., CCO (ethanol)"
+                      className="flex-1 px-4 py-3 bg-surface border border-border rounded-xl input-focus text-text placeholder:text-text-muted text-lg"
+                    />
+                    <Button onClick={handleAnalyze} isLoading={analyzing} size="lg">
+                      {analyzing ? 'Analyzing...' : 'Analyze'}
+                    </Button>
+                  </div>
+                </div>
 
-          <TabsContent value="discover">
-            <DiscoverTab />
-          </TabsContent>
+                {/* Quick Examples */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-sm text-text-muted">Try:</span>
+                  {exampleMolecules.map((mol) => (
+                    <button
+                      key={mol.smiles}
+                      onClick={() => setSmiles(mol.smiles)}
+                      className="px-3 py-1.5 text-sm bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
+                    >
+                      {mol.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </section>
 
-          <TabsContent value="compare">
-            <CompareTab />
-          </TabsContent>
-        </Tabs>
+          {/* Results Section */}
+          {result && (
+            <div className="space-y-8 animate-slide-up">
+              {/* Large Molecular Viewer */}
+              <section>
+                <Card hover={false} className="overflow-hidden">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-semibold text-text">Molecular Structure</h3>
+                    {/* 2D/3D Toggle */}
+                    <div className="flex gap-2 bg-surface p-1 rounded-xl">
+                      <Button
+                        size="sm"
+                        variant={viewMode === '2d' ? 'primary' : 'ghost'}
+                        onClick={() => setViewMode('2d')}
+                      >
+                        2D View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={viewMode === '3d' ? 'primary' : 'ghost'}
+                        onClick={() => setViewMode('3d')}
+                      >
+                        3D View
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center bg-gradient-to-br from-surface to-primary-50/20 rounded-xl p-8">
+                    {viewMode === '2d' ? (
+                      <MoleculeViewer2D smiles={result.properties.smiles} width={800} height={600} />
+                    ) : (
+                      <MoleculeViewer3D smiles={result.properties.smiles} width={800} height={600} />
+                    )}
+                  </div>
+                </Card>
+              </section>
+
+              {/* Properties Grid */}
+              <section>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Molecular Properties */}
+                  <Card hover={false}>
+                    <h3 className="text-xl font-semibold text-text mb-6">Molecular Properties</h3>
+                    <PropertiesTable properties={result.properties} />
+                  </Card>
+
+                  {/* Energy Decomposition */}
+                  <Card hover={false}>
+                    <h3 className="text-xl font-semibold text-text mb-6">Energy Decomposition</h3>
+                    <EnergyBar energy={result.energy} />
+                  </Card>
+                </div>
+              </section>
+
+              {/* Discover Similar - Placeholder */}
+              <section>
+                <Card hover={false}>
+                  <h3 className="text-xl font-semibold text-text mb-4">Similar Molecules</h3>
+                  <p className="text-text-muted text-center py-8">
+                    Similar molecule discovery coming soon...
+                  </p>
+                </Card>
+              </section>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!result && !analyzing && (
+            <div className="text-center py-16 animate-fade-in">
+              <div className="text-6xl mb-4">🧪</div>
+              <h3 className="text-2xl font-semibold text-text mb-2">Ready to Analyze</h3>
+              <p className="text-text-muted max-w-md mx-auto">
+                Enter a SMILES string above to get started with molecular analysis and visualization
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   )

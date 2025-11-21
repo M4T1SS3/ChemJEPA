@@ -28,30 +28,30 @@ export default function Home() {
     if (!smiles) return
 
     setAnalyzing(true)
-    // Mock data
-    setTimeout(() => {
-      setResult({
-        properties: {
-          smiles,
-          LogP: 2.5,
-          TPSA: 60,
-          MolWt: 180,
-          QED: 0.72,
-          SA: 2.1,
-          NumHDonors: 2,
-          NumHAcceptors: 3,
-          NumRotatableBonds: 1,
+
+    try {
+      // Call backend API
+      const response = await fetch('http://localhost:8001/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        energy: {
-          total: -5.2,
-          binding: -2.1,
-          stability: -1.5,
-          properties: -1.2,
-          novelty: -0.4,
-        },
+        body: JSON.stringify({ smiles }),
       })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Analysis failed')
+      }
+
+      const data = await response.json()
+      setResult(data)
+    } catch (error: any) {
+      console.error('Analysis error:', error)
+      alert(`Error: ${error.message}`)
+    } finally {
       setAnalyzing(false)
-    }, 1000)
+    }
   }
 
   const exampleMolecules = [

@@ -7,7 +7,7 @@
 
 ## Abstract
 
-Molecular optimization in drug discovery is fundamentally limited by sample efficiency: each oracle query (DFT calculation or wet-lab experiment) requires hours to days of compute or months of laboratory work. We introduce **counterfactual planning**, a method that achieves up to a **2,500-fold reduction in oracle queries** on standardized benchmarks while discovering high-quality drug candidates. By factoring latent dynamics into reaction-dependent and environment-dependent components, we answer multiple "what if" questions with a single expensive oracle call.
+Molecular optimization in drug discovery is fundamentally limited by sample efficiency: each oracle query (DFT calculation or wet-lab experiment) requires hours to days of compute or months of laboratory work. We introduce **counterfactual planning**, a method that achieves up to a **2,500-fold reduction in surrogate oracle queries** in simulation-based experiments on standardized benchmarks. By factoring latent dynamics into reaction-dependent and environment-dependent components, we answer multiple "what if" questions with a single oracle call to our learned model. These simulation results provide proof-of-concept evidence for substantial efficiency gains, pending validation with authentic DFT and wet-laboratory experiments.
 
 **Key contribution:** The decomposition **z**<sub>t+1</sub> = **z**<sub>t</sub> + Δ**z**<sub>rxn</sub>(**z**<sub>t</sub>, **a**<sub>t</sub>) + Δ**z**<sub>env</sub>(**c**<sub>t</sub>) enables **O(1)** oracle complexity per counterfactual query, compared to **O(N)** for standard approaches.
 
@@ -25,11 +25,11 @@ Molecular optimization in drug discovery is fundamentally limited by sample effi
   <img src="results/figures/pmo_benchmark_comparison.png" width="900px">
 </p>
 
-**2,500× sample efficiency** on QED drug-likeness optimization:
-- ChemJEPA: **4 oracle calls** → QED 0.855
-- Baselines (Graph GA, REINVENT): **10,000 oracle calls** → QED 0.948
+**2,500× oracle budget difference** on QED drug-likeness optimization (surrogate oracle experiments):
+- ChemJEPA: **4 oracle calls** → QED 0.855 (early stop)
+- Baselines (Graph GA, REINVENT): **10,000 oracle calls** (full budget) → QED 0.948
 
-*Note: ChemJEPA models trained 1 epoch only; full training expected to close quality gap while preserving efficiency.*
+*Note: All experiments use learned models as surrogate oracles. ChemJEPA models trained 1 epoch only (~6 hrs); baselines fully trained. The 2,500× reflects comparison of our early-stop point against baselines' full budget utilization.*
 
 ### QM9 Internal Benchmark (Controlled Comparison)
 
@@ -37,7 +37,7 @@ Molecular optimization in drug discovery is fundamentally limited by sample effi
   <img src="results/figures/sample_efficiency.png" width="750px">
 </p>
 
-**43× sample efficiency** on multi-objective property optimization with identical solution quality. This corresponds to reducing 861 hours (36 days) to 20 hours (<1 day) per optimization run.
+**43× oracle call reduction** on multi-objective property optimization with statistically equivalent solution quality (p=0.89). In simulation with surrogate oracles, this corresponds to a potential reduction from 861 to 20 calls per optimization run.
 
 | Method | Oracle Calls | Best Energy | Speedup |
 |--------|-------------|-------------|---------|
@@ -50,7 +50,7 @@ Molecular optimization in drug discovery is fundamentally limited by sample effi
   <img src="results/figures/speedup_comparison_dual.png" width="900px">
 </p>
 
-**Statistical validation:** Paired t-test (p=0.89) confirms no significant quality difference. Bootstrap confidence intervals: counterfactual [−0.035, −0.017], standard [−0.036, −0.018]. Results consistent across 5 independent trials.
+**Statistical validation:** Paired t-test (p=0.89) confirms no significant quality difference between counterfactual and standard MCTS despite 43-fold difference in oracle calls. Oracle call counts are deterministic (20 vs 861 across all 5 trials), reflecting algorithmic structure. Results consistent across independent runs.
 
 ---
 
@@ -281,34 +281,36 @@ ChemJEPA has been successfully integrated with the [PMO (Practical Molecular Opt
 
 ### Benchmark Results (QED Task)
 
-| Method | avg_top10 | Oracle Calls | Sample Efficiency |
+| Method | avg_top10 | Oracle Calls | Budget Utilization |
 |--------|-----------|--------------|-------------------|
-| **Graph GA** | 0.948 | 10,000 | 1× (baseline) |
-| **REINVENT** | 0.947 | 10,000 | 1× (baseline) |
-| **ChemJEPA (ours)*** | 0.855 | **4** | **2,500×** |
+| **Graph GA** | 0.948 | 10,000 | Full budget |
+| **REINVENT** | 0.947 | 10,000 | Full budget |
+| **ChemJEPA (ours)*** | 0.855 | **4** | **0.04% (early stop)** |
 
-***Models trained for 1 epoch only** - explaining lower absolute scores vs fully-trained baselines. Despite early-stage training, ChemJEPA achieves **2,500× sample efficiency** (4 oracle calls vs 10,000 budget)
+***Models trained for 1 epoch only** (~6 hrs on M4 Pro) - explaining lower absolute scores vs fully-trained baselines. **All methods use surrogate oracles (learned models)**. The 2,500× reflects that ChemJEPA early-stops at 4 calls while baselines use their full 10,000-call budget.
 
 **Key Findings:**
-- ✅ **Extreme sample efficiency**: 4 oracle calls to reach QED 0.855 (vs 10,000 budget)
+- ✅ **Dramatic oracle efficiency**: 4 calls vs 10,000 budget (2,500× difference) in surrogate oracle experiments
 - ✅ **Successful integration**: 570 lines of code, full SMILES ↔ latent pipeline working
 - ✅ **Early stopping**: Optimization completes in <2 minutes per trial
-- ⚠️ **Lower absolute scores**: Due to 1-epoch training, not algorithmic limitation
-- 📈 **Future potential**: Full training expected to reach competitive scores while maintaining efficiency
+- ⚠️ **Lower absolute scores**: Due to 1-epoch training, not fundamental algorithmic limitation
+- ⚠️ **Simulation-based**: Results use learned surrogate oracles, not authentic DFT/wet-lab
+- 📈 **Future validation needed**: Authentic DFT and experimental validation to confirm efficiency gains transfer to real workflows
 
-This validates the core counterfactual planning approach and positions ChemJEPA for main conference publication.
+This provides proof-of-concept evidence for the counterfactual planning approach in simulation settings.
 
 ---
 
 ## Future Directions
 
-- **Extended training:** Full multi-epoch training to reach competitive absolute scores (currently 1 epoch only)
-- **PMO multi-task evaluation:** Run full 23-task PMO benchmark to validate sample efficiency across diverse objectives
-- **Scale to OMol25:** Meta's 100M molecule dataset (released May 2025) for large-scale validation
+- **Authentic oracle validation:** Test with real DFT calculations (ωB97X-D/def2-TZVP) to validate efficiency gains transfer beyond surrogate models
+- **Extended training:** Full multi-epoch training to reach competitive absolute scores (currently 1 epoch only, ~6 hrs)
+- **PMO multi-task evaluation:** Run full 23-task PMO benchmark to validate oracle efficiency across diverse objectives
+- **Scale to OMol25:** Meta's 100M molecule dataset (released May 2025) for pharmaceutical-scale validation
 - **Improved exploration:** Add diversity rewards and noise injection to escape local optima
-- **Wet-lab experiments:** Empirical validation with real chemical synthesis
+- **Wet-lab experiments:** Empirical validation with real chemical synthesis and assays
 - **Protein-ligand binding:** Extend counterfactual planning to drug-target optimization
-- **Theoretical analysis:** Formal guarantees on factorization error bounds
+- **Factorization analysis:** Study when additive separability breaks down (e.g., mechanism-condition coupling)
 
 ---
 

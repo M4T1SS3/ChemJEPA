@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Multi-objective molecular optimization results. Mean ± std over 5 trials.}
+\label{tab:results}
+\begin{tabular}{lccc}
+\toprule
+Method & Best Energy & Oracle Calls & Sample Eff. \\
+\midrule
+Random Search & $-0.556 \pm 0.080$ & $100 \pm 0$ & $0.0056 \pm 0.0008$ \\
+Greedy & $-0.410 \pm 0.275$ & $101 \pm 0$ & $0.0041 \pm 0.0027$ \\
+Standard MCTS & $-0.027 \pm 0.374$ & $861 \pm 0$ & $0.0004 \pm 0.0002$ \\
+\textbf{Counterfactual MCTS} & $-0.026 \pm 0.373$ & $20 \pm 0$ & $0.0160 \pm 0.0096$ \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -78,6 +78,8 @@ def scatter_mps_compatible(src, index, dim=0, dim_size=None, reduce='sum'):
         # Initialize with very negative values for max operation
         out = torch.full(shape, float('-inf'), dtype=src.dtype, device=src.device)
 
+        # Expand index to match src dimensions
+        # This works correctly now because we use index_select() downstream instead of direct indexing
         index_expanded = index
         for _ in range(len(src.shape) - 1):
             index_expanded = index_expanded.unsqueeze(-1)
@@ -231,10 +233,13 @@ class AttentionPooling(nn.Module):
         attn = torch.clamp(attn, min=-20.0, max=20.0)
 
         # Softmax per graph (using log-sum-exp trick for stability)
-        attn_max = scatter_mps_compatible(attn, batch, dim=0, dim_size=B, reduce='max')[batch]  # [N, H]
+        # Use index_select instead of direct indexing to handle B=1 case correctly
+        attn_max_per_graph = scatter_mps_compatible(attn, batch, dim=0, dim_size=B, reduce='max')  # [B, H]
+        attn_max = attn_max_per_graph.index_select(0, batch)  # [N, H]
         attn_shifted = attn - attn_max
         attn_exp = torch.exp(attn_shifted)
-        attn_sum = scatter_mps_compatible(attn_exp, batch, dim=0, dim_size=B, reduce='sum')[batch]  # [N, H]
+        attn_sum_per_graph = scatter_mps_compatible(attn_exp, batch, dim=0, dim_size=B, reduce='sum')  # [B, H]
+        attn_sum = attn_sum_per_graph.index_select(0, batch)  # [N, H]
         attn_norm = attn_exp / (attn_sum + 1e-8)
 
         # Weighted sum
@@ -290,10 +295,13 @@ class Set2Set(nn.Module):
             attn = torch.clamp(attn, min=-20.0, max=20.0)
 
             # Softmax per graph (using log-sum-exp trick for stability)
-            attn_max = scatter_mps_compatible(attn, batch, dim=0, dim_size=B, reduce='max')[batch]
+            # Use index_select instead of direct indexing to handle B=1 case correctly
+            attn_max_per_graph = scatter_mps_compatible(attn, batch, dim=0, dim_size=B, reduce='max')  # [B]
+            attn_max = attn_max_per_graph.index_select(0, batch)  # [N]
             attn_shifted = attn - attn_max
             attn_exp = torch.exp(attn_shifted)
-            attn_sum = scatter_mps_compatible(attn_exp, batch, dim=0, dim_size=B, reduce='sum')[batch]
+            attn_sum_per_graph = scatter_mps_compatible(attn_exp, batch, dim=0, dim_size=B, reduce='sum')  # [B]
+            attn_sum = attn_sum_per_graph.index_select(0, batch)  # [N]
             attn_norm = attn_exp / (attn_sum + 1e-8)
 
             # Weighted sum

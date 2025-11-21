@@ -1,6 +1,6 @@
 # ChemJEPA: Counterfactual Planning in Latent Chemical Space
 
-[![Paper](https://img.shields.io/badge/Paper-GitHub%20Pages-blue)](https://M4T1SS3.github.io/ChemWorld)
+[![Paper](https://img.shields.io/badge/Paper-GitHub%20Pages-blue)](https://yourusername.github.io/ChemJEPA)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ---
@@ -79,7 +79,7 @@ Since cost(Δz<sub>env</sub>) ≪ oracle cost, speedup scales linearly with cond
 ## Installation
 
 ```bash
-git clone https://github.com/M4T1SS3/ChemWorld
+git clone https://github.com/yourusername/ChemWorld
 cd ChemWorld
 pip install -e .
 ```
@@ -203,7 +203,7 @@ ChemWorld/
 
 ## Research Paper
 
-**Full paper:** [M4T1SS3.github.io/ChemWorld](https://M4T1SS3.github.io/ChemWorld)
+**Full paper:** [yourusername.github.io/ChemWorld](https://yourusername.github.io/ChemWorld)
 
 The paper includes:
 - Theoretical foundation connecting to causal inference (Pearl's do-calculus)
